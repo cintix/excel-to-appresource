@@ -105,7 +105,7 @@ public class Program
 
     private void WriteTranslation(StreamWriter streamWriter, string set, string name, string language, string value)
     {
-        string lines = $"\ndbo.UpsertAppResource  '{set}', '{name}', '{language}', N'{value}', SYSUTCDATETIME(), 1\nGO\n";
+        string lines = $"\ndbo.UpsertAppResource  '{set}', '{name}', '{language}', N'{value}', SYSUTCDATETIME, 1\nGO\n";
         streamWriter.Write(lines);
     }
 
