@@ -16,6 +16,8 @@ public class Program
         
         applicationArguments.Add("sheet", "Sheet index the translation are on. First sheet is 0", "1");
         applicationArguments.Add("rows", "Number of rows to import default 1", "1");
+        applicationArguments.Add("origin-value", "Origin-Value is the location of the translation original value", "F1");
+        applicationArguments.Add("origin-culture", "Origin-Culture is the origin language ex. dk", "en");
         applicationArguments.Add("resource-set", "Resource-Set name to add to the SQLs default its set to resource-name", "resource-name");
         applicationArguments.Add("resource-offset", "Resource offset is the address Column:Row the ResourceName is placed. default: H1 ", "H1");
         applicationArguments.Add("import-offset", "Import offset is the address Column:Row the translations are placed. default: I1 ", "I1");
@@ -59,7 +61,10 @@ public class Program
         string resourceName =  applicationArguments.Get("resource-offset", "H1");
         string startsFrom =    applicationArguments.Get("import-offset","I1");
         string outputFile = applicationArguments.Get("output","UpdateAppResources.sql");
-
+        
+        string originalTextLocation = applicationArguments.Get("origin-value", "F1");
+        string originalTextLanguage = applicationArguments.Get("origin-culture", "en");
+        
         int updatesWritten = 0;
         if (File.Exists(outputFile)) File.Delete(outputFile);
 
@@ -70,6 +75,8 @@ public class Program
 
             SheetLocation resourceLocation = GetLocationFromString(resourceName);
             SheetLocation importLocation = GetLocationFromString(startsFrom);
+            SheetLocation originResourceLocation = GetLocationFromString(originalTextLocation);
+            
             StreamWriter streamWriter = new StreamWriter(new FileStream(outputFile, FileMode.OpenOrCreate), Encoding.UTF8);
 
             streamWriter.AutoFlush = true;
@@ -83,16 +90,20 @@ public class Program
                 int languageHeaderIndex = importLocation.Column;
                 string language = sheet.GetRow(0).Cells[languageHeaderIndex].StringCellValue;
 
+                string originalText = sheet.GetRow(originResourceLocation.Row).Cells[originResourceLocation.Column].StringCellValue.Replace("'","''");
+                WriteTranslation(streamWriter, resourceSet, resourceName, originalTextLanguage, originalText);
+                
                 while (language.Trim().Length > 0)
                 {
-                    languageHeaderIndex++;
                     if (sheet.GetRow(0).Cells.Count <= languageHeaderIndex) break;
                     language = sheet.GetRow(0).Cells[languageHeaderIndex].StringCellValue;
                     string translation = sheet.GetRow(importLocation.Row).Cells[languageHeaderIndex].StringCellValue.Replace("'","''");
                     WriteTranslation(streamWriter, resourceSet, resourceName, language, translation);
                     updatesWritten++;
+                    languageHeaderIndex++;
                 }
 
+                originResourceLocation.Row++;
                 resourceLocation.Row++;
                 importLocation.Row++;
                 rowsToImport--;
